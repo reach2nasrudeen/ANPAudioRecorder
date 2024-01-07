@@ -6,18 +6,21 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Drawable
 import android.media.MediaPlayer
+import android.media.audiofx.NoiseSuppressor
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import com.github.windsekirun.naraeaudiorecorder.NaraeAudioRecorder
 import com.github.windsekirun.naraeaudiorecorder.chunk.AudioChunk
 import com.github.windsekirun.naraeaudiorecorder.config.AudioRecordConfig
 import com.github.windsekirun.naraeaudiorecorder.model.RecordState
+import com.github.windsekirun.naraeaudiorecorder.source.DefaultAudioSource
 import com.github.windsekirun.naraeaudiorecorder.source.NoiseAudioSource
-import kotlinx.android.synthetic.main.anp_ar_layout.view.*
+import kotlinx.android.synthetic.main.layout_audio_recorder_view.view.*
 import pereira.agnaldo.audiorecorder.Helper.Companion.lightenColor
 import java.io.File
 import java.io.FileInputStream
@@ -143,6 +146,12 @@ class AudioRecorderView @JvmOverloads constructor(
     }
 
 
+    private var onSendListener: ((File) -> Unit)? = null
+
+    fun setOnSend(listener: (File) -> Unit) {
+        onSendListener = listener
+    }
+
     private var onDeleteListener: (() -> Unit)? = null
     private var onIDeleteListener: OnDeleteListener? = null
 
@@ -208,12 +217,14 @@ class AudioRecorderView @JvmOverloads constructor(
 
         recordFile = File(context.cacheDir, "record_${System.currentTimeMillis()}.wav")
 
-        LayoutInflater.from(context).inflate(R.layout.anp_ar_layout, this)
+//        LayoutInflater.from(context).inflate(R.layout.anp_ar_layout, this)
+        LayoutInflater.from(context).inflate(R.layout.layout_audio_recorder_view, this)
         play_button.setOnClickListener { onPlayButtonClicked() }
         pause_button.setOnClickListener { onPauseButtonClicked() }
         stop_button.setOnClickListener { onStopButtonClicked() }
         record_button.setOnClickListener { onRecordButtonClicked() }
         delete_button.setOnClickListener { onDeleteButtonClicked() }
+        send_button.setOnClickListener { onFinishRecordListener?.invoke(recordFile) }
 
         play_pause_seek.isVisible = false
         timer_view_current.isVisible = false
@@ -228,13 +239,17 @@ class AudioRecorderView @JvmOverloads constructor(
             }
         })
 
-        horizontal_wave.clearWave()
+//        horizontal_wave.clearWave()
+    }
+
+    fun performRecord() {
+        record_button.performClick()
     }
 
     private fun initializeAudioRecorder() {
         val recordConfig = AudioRecordConfig.defaultConfig()
         val audioSource = NoiseAudioSource(recordConfig)
-
+        println("NoiseSuppressor.isAvailable()---->${NoiseSuppressor.isAvailable()}")
         recordFile.deleteIfExists()
 
         audioRecorder = NaraeAudioRecorder()
@@ -333,7 +348,7 @@ class AudioRecorderView @JvmOverloads constructor(
 
             timer_view.setTextColor(customBaseColorLight)
             timer_view_current.setTextColor(customBaseColorLight)
-            horizontal_wave.setWaveColor(customBaseColorLight)
+//            horizontal_wave.setWaveColor(customBaseColorLight)
             delete_button.setColorFilter(customBaseColorLighter)
 
             play_pause_seek.apply {
@@ -364,9 +379,9 @@ class AudioRecorderView @JvmOverloads constructor(
             delete_button.setColorFilter(customDeleteIconTint)
         }
 
-        if (customWaveTint != 0) {
+       /* if (customWaveTint != 0) {
             horizontal_wave.setWaveColor(customWaveTint)
-        }
+        }*/
         if (customBackgroundTint != 0) {
             anp_ar_component_layout.background?.colorFilter =
                 PorterDuffColorFilter(customBackgroundTint, PorterDuff.Mode.SRC_ATOP)
@@ -399,12 +414,14 @@ class AudioRecorderView @JvmOverloads constructor(
         record_button.isVisible = false
         stop_button.isVisible = true
         delete_button.isVisible = false
-        horizontal_wave.isVisible = true
+        send_button.isVisible = false
+//        horizontal_wave.isVisible = true
         play_pause_seek.isVisible = false
         timer_view_current.isVisible = false
+        anp_actions_layout.isVisible = false
 
         if (!isRecording) {
-            horizontal_wave.clearWave()
+//            horizontal_wave.clearWave()
             initializeAudioRecorder()
             audioRecorder.startRecording(context)
         }
@@ -420,9 +437,11 @@ class AudioRecorderView @JvmOverloads constructor(
         record_button.isVisible = false
         stop_button.isVisible = false
         delete_button.isVisible = true
-        horizontal_wave.isVisible = false
+        send_button.isVisible = true
+//        horizontal_wave.isVisible = false
         play_pause_seek.isVisible = true
         timer_view_current.isVisible = true
+        anp_actions_layout.isVisible = true
 
         totalRecordedAudioDuration = currentRecorderTime
         if (isRecording) {
@@ -435,7 +454,7 @@ class AudioRecorderView @JvmOverloads constructor(
 
     private fun onAudioRecorderCallbackReceive(audioChunk: AudioChunk) {
         val byteArray = audioChunk.toByteArray()
-        horizontal_wave.updateAudioWave(byteArray)
+//        horizontal_wave.updateAudioWave(byteArray)
     }
 
     private fun onTimerCountCallbackReceive(currentTime: Long) {
@@ -464,9 +483,11 @@ class AudioRecorderView @JvmOverloads constructor(
         record_button.isVisible = false
         stop_button.isVisible = false
         delete_button.isVisible = true
-        horizontal_wave.isVisible = false
+        send_button.isVisible = true
+//        horizontal_wave.isVisible = false
         play_pause_seek.isVisible = true
         timer_view_current.isVisible = true
+
 
         if (!isMediaPlayerPrepared) {
             val fis = FileInputStream(recordFile)
@@ -547,7 +568,8 @@ class AudioRecorderView @JvmOverloads constructor(
         record_button.isVisible = false
         stop_button.isVisible = false
         delete_button.isVisible = true
-        horizontal_wave.isVisible = false
+        send_button.isVisible = true
+//        horizontal_wave.isVisible = false
         play_pause_seek.isVisible = true
         timer_view_current.isVisible = true
 
@@ -566,11 +588,14 @@ class AudioRecorderView @JvmOverloads constructor(
         record_button.isVisible = true
         stop_button.isVisible = false
         delete_button.isVisible = false
-        horizontal_wave.isVisible = true
+        send_button.isVisible = false
+//        horizontal_wave.isVisible = true
         play_pause_seek.isVisible = false
         timer_view_current.isVisible = false
 
-        horizontal_wave.clearWave()
+//        anp_actions_layout.isVisible = false
+
+//        horizontal_wave.clearWave()
 
         if (isMediaPlayerPrepared) {
             mediaPlayer.stop()

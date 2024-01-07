@@ -2,8 +2,8 @@ package pereira.agnaldo.audiorecorder
 
 import android.Manifest
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -23,6 +23,11 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        recordView.performRecord()
+
+        recordView.setPlayIcon(getDrawable(R.drawable.ic_vd_play))
+        recordView.setPauseIcon(getDrawable(R.drawable.ic_vd_pause))
+
         recordView.setOnStartRecording {
             // Do something with file
         }
@@ -35,6 +40,10 @@ class MainActivity : AppCompatActivity() {
 
         recordView.setOnFinishRecord { file ->
             // Do something with file
+            println("setOnFinishRecord--->file--absolutePath-->${file.absolutePath}")
+            println("setOnFinishRecord--->file--name-->${file.name}")
+            println("setOnFinishRecord--->file--path-->${file.path}")
+            println("setOnFinishRecord--->file--length-->${file.length()}")
         }
 
         recordView.setOnFinishRecord(object : AudioRecorderView.OnFinishRecordListener {
@@ -92,6 +101,13 @@ class MainActivity : AppCompatActivity() {
                 // Do something with file
             }
         })
+
+        recordView.setOnSend { file ->
+            println("setOnFinishRecord--->file--absolutePath-->${file.absolutePath}")
+            println("setOnFinishRecord--->file--name-->${file.name}")
+            println("setOnFinishRecord--->file--path-->${file.path}")
+            println("setOnFinishRecord--->file--length-->${file.length()}")
+        }
 
     }
 }

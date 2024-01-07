@@ -1,2 +1,2 @@
-include ':app', ':audiorecorder'
+include ':app', ':audiorecorder', ':core'
 rootProject.name='ANP AudioRecorder'
